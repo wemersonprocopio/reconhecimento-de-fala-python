@@ -1,0 +1,7 @@
+# Gravações geradas pelos scripts
+*.wav
+
+# Python
+__pycache__/
+.venv/
+venv/

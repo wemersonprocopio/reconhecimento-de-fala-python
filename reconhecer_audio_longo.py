@@ -1,35 +1,43 @@
 import speech_recognition as sr
 import time
 
+# Microfone usado na captura. None = microfone padrão do sistema.
+# Para usar outro, rode listar_microfones.py e coloque aqui o número dele.
+INDICE_MICROFONE = None
+COMANDO_PARAR = "encerrar gravação"
+
+acabou = False
+
+
 def tratar_audio(rec, audio):
     global acabou
     # tratar o meu audio
     try:
         texto = rec.recognize_google(audio, language="pt-BR")
         print(texto)
-        if "encerrar gravação" in texto:
+        if COMANDO_PARAR in texto.lower():
             acabou = True
-    except:
+    except sr.UnknownValueError:
         print("Não escutei")
+    except sr.RequestError as erro:
+        print(f"Não foi possível acessar o serviço de reconhecimento (verifique a internet): {erro}")
 
-acabou = False
 
 rec = sr.Recognizer()
+microfone = sr.Microphone(device_index=INDICE_MICROFONE)
 
-with sr.Microphone(device_index=3) as microfone:
+with microfone:
     rec.adjust_for_ambient_noise(microfone)
-    rec.pause_threshold = 0.8
-    # rec.dynamic_energy_adjustment_ratio = 4
-    print("Pode começar a falar:")
+rec.pause_threshold = 0.8
+# rec.dynamic_energy_adjustment_ratio = 4
+print(f'Pode começar a falar (diga "{COMANDO_PARAR}" para parar):')
 
-# thread 1
+# thread 1: ouve em segundo plano e chama tratar_audio a cada trecho
 parar_ouvir = rec.listen_in_background(microfone, tratar_audio)
 
-# thread 2
-while True:
+# thread 2: espera o comando de parar
+while not acabou:
     time.sleep(0.1)
-    if acabou == True: # vou falar pra ele encerrar a gravação
-        break
 
-# thread 1
 parar_ouvir(wait_for_stop=False)
+print("Gravação encerrada.")
